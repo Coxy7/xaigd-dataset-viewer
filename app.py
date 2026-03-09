@@ -261,14 +261,14 @@ def navigation_buttons(active_indices: List[int]) -> None:
     next_disabled = not active_indices
     left_col, right_col = st.columns(2)
     left_col.button(
-        "Previous",
+        "Previous (←/A)",
         width="stretch",
         disabled=previous_disabled,
         on_click=step_image,
         args=[-1],
     )
     right_col.button(
-        "Next",
+        "Next (→/D)",
         width="stretch",
         disabled=next_disabled,
         on_click=step_image,

@@ -7,12 +7,12 @@ from viewer.constants import CATEGORY_LABELS, CATEGORY_ORDER
 
 def button_label_map() -> dict[str, str]:
     labels = {
-        "ArrowLeft": "Previous",
-        "ArrowRight": "Next",
-        "a": "Previous",
-        "A": "Previous",
-        "d": "Next",
-        "D": "Next",
+        "ArrowLeft": "Previous (←/A)",
+        "ArrowRight": "Next (→/D)",
+        "a": "Previous (←/A)",
+        "A": "Previous (←/A)",
+        "d": "Next (→/D)",
+        "D": "Next (→/D)",
         "0": "0 All",
     }
     for index, category in enumerate(CATEGORY_ORDER, start=1):
