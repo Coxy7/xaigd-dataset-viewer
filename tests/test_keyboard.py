@@ -14,8 +14,10 @@ class KeyboardShortcutTests(unittest.TestCase):
         self.assertTrue(html_mock.called)
         script = html_mock.call_args.args[0]
         self.assertIn('event.key === "f" || event.key === "F"', script)
+        self.assertIn('event.key === "s" || event.key === "S"', script)
         self.assertIn("closeFullscreenDialog", script)
         self.assertIn("clickFullscreenButton", script)
+        self.assertIn('.st-key-toggle_all_labels button', script)
 
 
 if __name__ == "__main__":

@@ -50,6 +50,14 @@ def inject_keyboard_shortcuts() -> None:
             }}
             return false;
           }};
+          const clickScopedButton = (selector) => {{
+            const target = document.querySelector(selector);
+            if (target && !target.disabled) {{
+              target.click();
+              return true;
+            }}
+            return false;
+          }};
           const clickFullscreenButton = () => {{
             const imageBlocks = Array.from(document.querySelectorAll('[data-testid="stImage"]')).reverse();
             for (const block of imageBlocks) {{
@@ -103,6 +111,12 @@ def inject_keyboard_shortcuts() -> None:
               if (!closeFullscreenDialog()) {{
                 clickFullscreenButton();
               }}
+              return;
+            }}
+
+            if (event.key === "s" || event.key === "S") {{
+              event.preventDefault();
+              clickScopedButton(".st-key-toggle_all_labels button");
               return;
             }}
 

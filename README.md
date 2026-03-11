@@ -44,6 +44,7 @@ By default the app loads `Coxy7/X-AIGD-demo` and starts on the `labeled_train` s
 
 - `Left` / `Right` or `A` / `D`: previous and next image
 - `F`: toggle the current image fullscreen view
+- `S`: show or hide all labels on the current image
 - `0`: clear category filter
 - `1`-`7`: select categories in spec order
 - Sidebar dataset selector, split selector, category selector, and quick filter buttons

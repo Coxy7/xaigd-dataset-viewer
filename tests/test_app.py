@@ -15,6 +15,25 @@ APP_SPEC.loader.exec_module(app)
 
 
 class AppStateTests(unittest.TestCase):
+    def test_next_overlay_categories_hides_all_when_all_available_are_selected(self) -> None:
+        next_categories = app.next_overlay_categories(
+            ["low-level-edge_shape", "low-level-texture"],
+            ["low-level-edge_shape", "low-level-texture"],
+        )
+
+        self.assertEqual(next_categories, [])
+
+    def test_next_overlay_categories_shows_all_when_subset_is_selected(self) -> None:
+        next_categories = app.next_overlay_categories(
+            ["low-level-edge_shape"],
+            ["low-level-edge_shape", "low-level-texture"],
+        )
+
+        self.assertEqual(
+            next_categories,
+            ["low-level-edge_shape", "low-level-texture"],
+        )
+
     def test_apply_source_change_resets_navigation_and_image_cache(self) -> None:
         original_cache = ImageLRUCache(capacity=app.IMAGE_CACHE_CAPACITY)
         original_cache.put(("repo", "labeled_train", 0), object())

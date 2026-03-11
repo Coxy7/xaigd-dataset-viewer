@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import html
-from typing import Dict, List, Set
+from typing import Dict, List
 
 import streamlit as st
 
@@ -220,6 +220,20 @@ def toggle_overlay_category(category: str) -> None:
     st.session_state.visible_overlay_categories = ordered_selected
 
 
+def next_overlay_categories(selected_categories: List[str], available_categories: List[str]) -> List[str]:
+    if available_categories and all(category in selected_categories for category in available_categories):
+        return []
+    return list(available_categories)
+
+
+def toggle_all_overlay_categories(available_categories: List[str], scope: str) -> None:
+    next_categories = next_overlay_categories(
+        st.session_state.visible_overlay_categories,
+        available_categories,
+    )
+    set_overlay_categories(next_categories, scope)
+
+
 def step_image(direction: int) -> None:
     active_indices = st.session_state.matching_indices_by_category.get(
         st.session_state.selected_category,
@@ -355,12 +369,17 @@ def sync_overlay_selection(base_labels: List) -> None:
         set_overlay_categories(preserved, current_scope)
 
 
-def render_legend(available_categories: Set[str]) -> None:
+def render_legend(available_categories: List[str]) -> None:
+    available_categories_set = set(available_categories)
     selected_categories = set(st.session_state.visible_overlay_categories)
+    all_selected = bool(available_categories) and all(
+        category in selected_categories for category in available_categories
+    )
+    toggle_label = "Hide All Labels (S)" if all_selected else "Show All Labels (S)"
 
     with st.container(key="legend_grid", gap="xsmall"):
         first_row = st.columns(4, gap="xsmall")
-        second_row = st.columns(3, gap="xsmall")
+        second_row = st.columns(4, gap="xsmall")
 
         for index, category in enumerate(CATEGORY_ORDER):
             prefix = "☑" if category in selected_categories else "☐"
@@ -370,11 +389,20 @@ def render_legend(available_categories: Set[str]) -> None:
                 label,
                 key=legend_style_key(category),
                 width="stretch",
-                disabled=category not in available_categories,
+                disabled=category not in available_categories_set,
                 type="primary" if category in selected_categories else "secondary",
                 on_click=toggle_overlay_category,
                 args=[category],
             )
+
+        second_row[3].button(
+            toggle_label,
+            key="toggle_all_labels",
+            width="stretch",
+            disabled=not available_categories,
+            on_click=toggle_all_overlay_categories,
+            args=[available_categories, st.session_state.overlay_selection_scope],
+        )
 
 
 def render_info_panel(
@@ -482,7 +510,7 @@ def render_viewer(split_data: SplitData) -> None:
         radius=PREFETCH_RADIUS,
     )
     rendered_image, skipped_count = draw_overlays(rendered_base_image, visible_labels)
-    available_categories = {label.category for label in base_labels}
+    available_categories = [category for category in CATEGORY_ORDER if any(label.category == category for label in base_labels)]
 
     render_legend(available_categories)
     render_image(rendered_image)
