@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 
 Point = Tuple[float, float]
 
@@ -18,5 +18,11 @@ class ImageRecord:
     generator: str
     width: int
     height: int
-    image: Any
     labels: Tuple[ArtifactLabel, ...]
+
+
+@dataclass(frozen=True)
+class SplitData:
+    dataset: Any
+    records: Tuple[ImageRecord, ...]
+    matching_indices_by_category: Dict[str, Tuple[int, ...]]

@@ -6,9 +6,9 @@ from typing import Dict, List, Set
 import streamlit as st
 
 from viewer.constants import ALL_CATEGORIES_OPTION, CATEGORY_COLORS, CATEGORY_LABELS, CATEGORY_ORDER
-from viewer.data import fetch_records, filter_labels, matching_indices
+from viewer.data import ImageLRUCache, filter_labels, get_or_load_image, load_split_data, prefetch_neighbor_images
 from viewer.keyboard import inject_keyboard_shortcuts
-from viewer.models import ImageRecord
+from viewer.models import ImageRecord, SplitData
 from viewer.navigation import next_index
 from viewer.render import draw_overlays
 
@@ -19,11 +19,13 @@ DATASET_OPTIONS = {
     "X-AIGD-demo": "Coxy7/X-AIGD-demo",
     "X-AIGD": "Coxy7/X-AIGD",
 }
+IMAGE_CACHE_CAPACITY = 8
+PREFETCH_RADIUS = 1
 
 
 @st.cache_resource(show_spinner=False)
-def load_records_cached(dataset_repo: str, split: str) -> List[ImageRecord]:
-    return fetch_records(dataset_repo, split)
+def load_split_cached(dataset_repo: str, split: str) -> SplitData:
+    return load_split_data(dataset_repo, split)
 
 
 def init_state() -> None:
@@ -41,6 +43,7 @@ def init_state() -> None:
     state.setdefault("jump_image_input", "1")
     state.setdefault("jump_match_input", "1")
     state.setdefault("total_records", 0)
+    state.setdefault("image_cache", ImageLRUCache(capacity=IMAGE_CACHE_CAPACITY))
 
 
 def legend_style_key(category: str) -> str:
@@ -196,13 +199,6 @@ def inject_compact_styles() -> None:
         """,
         width="stretch",
     )
-
-
-def build_matching_index_map(records: List[ImageRecord]) -> Dict[str, List[int]]:
-    matching = {ALL_CATEGORIES_OPTION: list(range(len(records)))}
-    for category in CATEGORY_ORDER:
-        matching[category] = matching_indices(records, category)
-    return matching
 
 
 def set_category(category: str) -> None:
@@ -453,22 +449,44 @@ def render_info_panel(
             )
 
 
+def apply_source_change(state: Dict[str, object], new_source_key: str) -> None:
+    if new_source_key != state["source_key"]:
+        state["source_key"] = new_source_key
+        state["current_index"] = 0
+        state["image_cache"] = ImageLRUCache(capacity=IMAGE_CACHE_CAPACITY)
+
+
 @st.fragment
-def render_viewer(records: List[ImageRecord]) -> None:
-    active_indices = st.session_state.matching_indices_by_category[st.session_state.selected_category]
+def render_viewer(split_data: SplitData) -> None:
+    active_indices = list(st.session_state.matching_indices_by_category[st.session_state.selected_category])
     filtered_count = len(active_indices)
 
-    record = records[st.session_state.current_index]
+    record = split_data.records[st.session_state.current_index]
     base_labels = filter_labels(record, st.session_state.selected_category)
     sync_overlay_selection(base_labels)
     selected_overlay_categories = set(st.session_state.visible_overlay_categories)
     visible_labels = [label for label in base_labels if label.category in selected_overlay_categories]
-    rendered_image, skipped_count = draw_overlays(record.image, visible_labels)
+    rendered_base_image = get_or_load_image(
+        st.session_state.image_cache,
+        split_data,
+        st.session_state.dataset_repo,
+        st.session_state.split,
+        st.session_state.current_index,
+    )
+    prefetch_neighbor_images(
+        st.session_state.image_cache,
+        split_data,
+        st.session_state.dataset_repo,
+        st.session_state.split,
+        st.session_state.current_index,
+        radius=PREFETCH_RADIUS,
+    )
+    rendered_image, skipped_count = draw_overlays(rendered_base_image, visible_labels)
     available_categories = {label.category for label in base_labels}
 
     render_legend(available_categories)
     render_image(rendered_image)
-    render_info_panel(record, active_indices, len(visible_labels), len(records))
+    render_info_panel(record, active_indices, len(visible_labels), len(split_data.records))
 
     if st.session_state.selected_category != ALL_CATEGORIES_OPTION and not base_labels:
         st.info("No matching artifacts on this image.")
@@ -509,22 +527,23 @@ def main() -> None:
     )
 
     new_source_key = f"{st.session_state.dataset_repo}:{st.session_state.split}"
-    if new_source_key != st.session_state.source_key:
-        st.session_state.source_key = new_source_key
-        st.session_state.current_index = 0
+    apply_source_change(st.session_state, new_source_key)
 
     try:
-        records = load_records_cached(st.session_state.dataset_repo, st.session_state.split)
+        split_data = load_split_cached(st.session_state.dataset_repo, st.session_state.split)
     except Exception as exc:  # pragma: no cover - UI error path
         st.error(f"Failed to load dataset: {exc}")
         return
 
-    if not records:
+    if not split_data.records:
         st.warning("The selected dataset split is empty.")
         return
 
-    st.session_state.current_index = max(0, min(st.session_state.current_index, len(records) - 1))
-    st.session_state.matching_indices_by_category = build_matching_index_map(records)
+    st.session_state.current_index = max(0, min(st.session_state.current_index, len(split_data.records) - 1))
+    st.session_state.matching_indices_by_category = {
+        category: list(indices)
+        for category, indices in split_data.matching_indices_by_category.items()
+    }
 
     st.sidebar.selectbox(
         "Category filter",
@@ -534,7 +553,7 @@ def main() -> None:
     )
 
     category_shortcut_buttons()
-    render_viewer(records)
+    render_viewer(split_data)
 
 
 if __name__ == "__main__":

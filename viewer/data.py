@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
+from collections import OrderedDict
+from io import BytesIO
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from viewer.constants import ALL_CATEGORIES_OPTION
-from viewer.models import ArtifactLabel, ImageRecord
+from PIL import Image
+
+from viewer.constants import ALL_CATEGORIES_OPTION, CATEGORY_ORDER
+from viewer.models import ArtifactLabel, ImageRecord, SplitData
+
+ImageCacheKey = Tuple[str, str, int]
 
 
 def normalize_label(raw_label: Dict[str, Any]) -> Optional[ArtifactLabel]:
@@ -27,9 +33,14 @@ def normalize_label(raw_label: Dict[str, Any]) -> Optional[ArtifactLabel]:
 
 
 def normalize_record(row: Dict[str, Any]) -> ImageRecord:
-    image = row["image"]
-    width = int(row.get("width") or image.size[0])
-    height = int(row.get("height") or image.size[1])
+    image = row.get("image")
+    width = row.get("width")
+    height = row.get("height")
+    if width is None or height is None:
+        if hasattr(image, "size"):
+            width, height = image.size
+        else:
+            raise ValueError("Image width/height missing from dataset row")
 
     labels = []
     for raw_label in row.get("labels") or []:
@@ -42,14 +53,22 @@ def normalize_record(row: Dict[str, Any]) -> ImageRecord:
     return ImageRecord(
         uid=str(row.get("uid", "")),
         generator=str(row.get("generator", "")),
-        width=width,
-        height=height,
-        image=image,
+        width=int(width),
+        height=int(height),
         labels=tuple(labels),
     )
 
 
-def fetch_records(dataset_repo: str, split: str) -> List[ImageRecord]:
+def build_matching_index_map(records: Iterable[ImageRecord]) -> Dict[str, Tuple[int, ...]]:
+    record_list = list(records)
+    matching = {ALL_CATEGORIES_OPTION: tuple(range(len(record_list)))}
+    for category in CATEGORY_ORDER:
+        matching[category] = tuple(matching_indices(record_list, category))
+    return matching
+
+
+def load_split_data(dataset_repo: str, split: str) -> SplitData:
+    from datasets import Image as HFImage
     from datasets import load_dataset
 
     if split not in {"labeled_train", "labeled_test"}:
@@ -60,7 +79,105 @@ def fetch_records(dataset_repo: str, split: str) -> List[ImageRecord]:
         data_files={split: f"hf://datasets/{dataset_repo}/data/{split}-*.parquet"},
         split=split,
     )
-    return [normalize_record(row) for row in dataset]
+    dataset = dataset.cast_column("image", HFImage(decode=False))
+    metadata_rows = dataset.remove_columns("image")
+    records = tuple(normalize_record(row) for row in metadata_rows)
+    return SplitData(
+        dataset=dataset,
+        records=records,
+        matching_indices_by_category=build_matching_index_map(records),
+    )
+
+
+def load_image(split_data: SplitData, index: int) -> Image.Image:
+    row = split_data.dataset[index]
+    raw_image = row.get("image")
+
+    if hasattr(raw_image, "load"):
+        raw_image.load()
+        return raw_image
+
+    if not isinstance(raw_image, dict):
+        raise TypeError(f"Unsupported image payload: {type(raw_image)!r}")
+
+    image_bytes = raw_image.get("bytes")
+    image_path = raw_image.get("path")
+    image_source: BytesIO | str
+    if image_bytes is not None:
+        image_source = BytesIO(image_bytes)
+    elif image_path:
+        image_source = image_path
+    else:
+        raise ValueError("Image payload is missing both bytes and path")
+
+    with Image.open(image_source) as decoded_image:
+        decoded_image.load()
+        return decoded_image.copy()
+
+
+class ImageLRUCache:
+    def __init__(self, capacity: int) -> None:
+        if capacity < 1:
+            raise ValueError("Image cache capacity must be positive")
+        self.capacity = capacity
+        self._cache: OrderedDict[ImageCacheKey, Image.Image] = OrderedDict()
+
+    def __len__(self) -> int:
+        return len(self._cache)
+
+    def get(self, key: ImageCacheKey) -> Optional[Image.Image]:
+        image = self._cache.get(key)
+        if image is None:
+            return None
+        self._cache.move_to_end(key)
+        return image
+
+    def put(self, key: ImageCacheKey, image: Image.Image) -> None:
+        self._cache[key] = image
+        self._cache.move_to_end(key)
+        if len(self._cache) > self.capacity:
+            self._cache.popitem(last=False)
+
+    def clear(self) -> None:
+        self._cache.clear()
+
+
+def image_cache_key(dataset_repo: str, split: str, index: int) -> ImageCacheKey:
+    return dataset_repo, split, index
+
+
+def get_or_load_image(
+    image_cache: ImageLRUCache,
+    split_data: SplitData,
+    dataset_repo: str,
+    split: str,
+    index: int,
+) -> Image.Image:
+    key = image_cache_key(dataset_repo, split, index)
+    image = image_cache.get(key)
+    if image is not None:
+        return image
+
+    image = load_image(split_data, index)
+    image_cache.put(key, image)
+    return image
+
+
+def prefetch_neighbor_images(
+    image_cache: ImageLRUCache,
+    split_data: SplitData,
+    dataset_repo: str,
+    split: str,
+    index: int,
+    radius: int = 1,
+) -> None:
+    if radius < 1:
+        return
+
+    for offset in range(1, radius + 1):
+        for neighbor_index in (index - offset, index + offset):
+            if 0 <= neighbor_index < len(split_data.records):
+                get_or_load_image(image_cache, split_data, dataset_repo, split, neighbor_index)
 
 
 def filter_labels(record: ImageRecord, category: str) -> List[ArtifactLabel]:
