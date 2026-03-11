@@ -28,6 +28,7 @@ By default the app loads `Coxy7/X-AIGD-demo` and starts on the `labeled_train` s
 ## Viewer Features
 
 - Single-image viewer with artifact polygon overlays.
+- Hover the image to open it in fullscreen (click the button above the top-right corner).
 - Polygons are rendered as colored outlines only.
 - Generator, UID, resolution, image index, filtered-match index, and visible-label count are shown in the info panel below the image.
 - Jump directly to an absolute image index or to a filtered matching-image index from the info panel.

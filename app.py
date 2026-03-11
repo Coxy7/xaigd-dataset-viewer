@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import html
-from io import BytesIO
 from typing import Dict, List, Set
-import base64
 
 import streamlit as st
 
@@ -277,29 +275,9 @@ def navigation_buttons(active_indices: List[int]) -> None:
 
 
 def render_image(image) -> None:
-    buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
-    st.html(
-        f"""
-        <div style="display:flex;justify-content:center;width:100%;">
-          <img
-            src="data:image/png;base64,{encoded}"
-            alt="X-AIGD sample"
-            style="
-              max-width:100%;
-              max-height:66vh;
-              width:auto;
-              height:auto;
-              object-fit:contain;
-              border:1px solid rgba(128, 128, 128, 0.35);
-              border-radius:0.5rem;
-            "
-          />
-        </div>
-        """,
-        width="stretch",
-    )
+    left_col, center_col, right_col = st.columns([1, 6, 1], gap="small")
+    with center_col:
+        st.image(image, width="stretch")
 
 
 def matching_progress(active_indices: List[int], current_index: int) -> str:
