@@ -30,6 +30,17 @@ def inject_keyboard_shortcuts() -> None:
           const buttonLabels = {labels!r};
 
           const normalize = (value) => value.replace(/\\s+/g, " ").trim();
+          const isEditableTarget = (active) => {{
+            const tag = active && active.tagName ? active.tagName.toLowerCase() : "";
+            const role = active && active.getAttribute ? active.getAttribute("role") : "";
+            return (
+              tag === "input" ||
+              tag === "textarea" ||
+              tag === "select" ||
+              role === "combobox" ||
+              (active && active.isContentEditable)
+            );
+          }};
           const clickButton = (label) => {{
             const buttons = Array.from(document.querySelectorAll("button"));
             const target = buttons.find((button) => !button.disabled && normalize(button.textContent || "") === label);
@@ -39,18 +50,59 @@ def inject_keyboard_shortcuts() -> None:
             }}
             return false;
           }};
+          const clickFullscreenButton = () => {{
+            const imageBlocks = Array.from(document.querySelectorAll('[data-testid="stImage"]')).reverse();
+            for (const block of imageBlocks) {{
+              const button = block.querySelector(
+                'button[aria-label*="fullscreen" i], button[title*="fullscreen" i]'
+              );
+              if (button && !button.disabled) {{
+                button.click();
+                return true;
+              }}
+            }}
+
+            const fallbackButton = Array.from(
+              document.querySelectorAll('button[aria-label*="fullscreen" i], button[title*="fullscreen" i]')
+            ).find((button) => !button.disabled);
+            if (fallbackButton) {{
+              fallbackButton.click();
+              return true;
+            }}
+            return false;
+          }};
+          const closeFullscreenDialog = () => {{
+            const dialogs = Array.from(document.querySelectorAll('[role="dialog"], [data-testid="stDialog"]'));
+            const dialog = dialogs.find((item) => item.getClientRects().length > 0);
+            if (!dialog) {{
+              return false;
+            }}
+
+            const closeButton = dialog.querySelector('button[aria-label*="close" i], button[title*="close" i]');
+            if (closeButton && !closeButton.disabled) {{
+              closeButton.click();
+              return true;
+            }}
+
+            document.dispatchEvent(new KeyboardEvent("keydown", {{
+              key: "Escape",
+              code: "Escape",
+              bubbles: true,
+            }}));
+            return true;
+          }};
 
           window.addEventListener("keydown", (event) => {{
             const active = event.target;
-            const tag = active && active.tagName ? active.tagName.toLowerCase() : "";
-            const role = active && active.getAttribute ? active.getAttribute("role") : "";
-            if (
-              tag === "input" ||
-              tag === "textarea" ||
-              tag === "select" ||
-              role === "combobox" ||
-              (active && active.isContentEditable)
-            ) {{
+            if (isEditableTarget(active) || event.ctrlKey || event.metaKey || event.altKey) {{
+              return;
+            }}
+
+            if (event.key === "f" || event.key === "F") {{
+              event.preventDefault();
+              if (!closeFullscreenDialog()) {{
+                clickFullscreenButton();
+              }}
               return;
             }}
 

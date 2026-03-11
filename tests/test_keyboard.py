@@ -1,0 +1,22 @@
+from __future__ import annotations
+
+import unittest
+from unittest.mock import patch
+
+from viewer.keyboard import inject_keyboard_shortcuts
+
+
+class KeyboardShortcutTests(unittest.TestCase):
+    def test_inject_keyboard_shortcuts_includes_fullscreen_toggle(self) -> None:
+        with patch("viewer.keyboard.st.html") as html_mock:
+            inject_keyboard_shortcuts()
+
+        self.assertTrue(html_mock.called)
+        script = html_mock.call_args.args[0]
+        self.assertIn('event.key === "f" || event.key === "F"', script)
+        self.assertIn("closeFullscreenDialog", script)
+        self.assertIn("clickFullscreenButton", script)
+
+
+if __name__ == "__main__":
+    unittest.main()
