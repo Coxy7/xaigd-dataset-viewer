@@ -471,7 +471,7 @@ def render_info_panel(
                     key="jump_image_input",
                     label_visibility="collapsed",
                     on_change=jump_to_image,
-                    width=80,
+                    width=60,
                 )
                 st.html(
                     f"<div class='viewer-info-suffix'>/ {total_records}</div>",
@@ -487,7 +487,7 @@ def render_info_panel(
                     key="jump_match_input",
                     label_visibility="collapsed",
                     on_change=jump_to_matching,
-                    width=80,
+                    width=60,
                     disabled=not active_indices,
                 )
                 st.html(
