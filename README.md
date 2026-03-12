@@ -32,6 +32,7 @@ By default the app loads `Coxy7/X-AIGD-demo` and starts on the `labeled_train` s
 - Polygons are rendered as colored outlines only.
 - Generator, UID, resolution, image index, filtered-match index, and visible-label count are shown in the info panel below the image.
 - Jump directly to an absolute image index or to a filtered matching-image index from the info panel.
+- Jump directly to a specific image from the sidebar by selecting a generator and entering a UID.
 - Category legend above the image:
   - click a legend item to toggle that category on the current image only
   - selected categories are highlighted

@@ -64,6 +64,39 @@ class AppStateTests(unittest.TestCase):
         self.assertEqual(state["current_index"], 4)
         self.assertIs(state["image_cache"], cache)
 
+    def test_jump_to_record_returns_matching_index_for_generator_uid(self) -> None:
+        split_data = app.SplitData(
+            dataset=None,
+            records=(),
+            matching_indices_by_category={},
+            generator_options=("g1", "g2"),
+            index_by_generator_uid={("g1", "u1"): 3},
+        )
+        app.st.session_state.jump_record_generator = "g1"
+        app.st.session_state.jump_record_uid = " u1 "
+        app.st.session_state.source_key = "repo:labeled_train"
+
+        error_message = app.jump_to_record(split_data)
+
+        self.assertIsNone(error_message)
+        self.assertEqual(app.st.session_state.current_index, 3)
+        self.assertEqual(app.st.session_state.jump_record_uid, " u1 ")
+
+    def test_jump_to_record_returns_error_when_generator_uid_is_missing(self) -> None:
+        split_data = app.SplitData(
+            dataset=None,
+            records=(),
+            matching_indices_by_category={},
+            generator_options=("g1",),
+            index_by_generator_uid={},
+        )
+        app.st.session_state.jump_record_generator = "g1"
+        app.st.session_state.jump_record_uid = "missing"
+
+        error_message = app.jump_to_record(split_data)
+
+        self.assertEqual(error_message, "No image found for generator 'g1' with UID 'missing'.")
+
 
 if __name__ == "__main__":
     unittest.main()

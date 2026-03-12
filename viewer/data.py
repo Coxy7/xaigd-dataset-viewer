@@ -67,6 +67,24 @@ def build_matching_index_map(records: Iterable[ImageRecord]) -> Dict[str, Tuple[
     return matching
 
 
+def build_generator_uid_index(records: Iterable[ImageRecord]) -> Dict[Tuple[str, str], int]:
+    index_by_generator_uid: Dict[Tuple[str, str], int] = {}
+    for index, record in enumerate(records):
+        index_by_generator_uid.setdefault((record.generator, record.uid), index)
+    return index_by_generator_uid
+
+
+def generator_options(records: Iterable[ImageRecord]) -> Tuple[str, ...]:
+    seen_generators = set()
+    ordered_generators = []
+    for record in records:
+        if record.generator in seen_generators:
+            continue
+        seen_generators.add(record.generator)
+        ordered_generators.append(record.generator)
+    return tuple(ordered_generators)
+
+
 def load_split_data(dataset_repo: str, split: str) -> SplitData:
     from datasets import Image as HFImage
     from datasets import load_dataset
@@ -86,6 +104,8 @@ def load_split_data(dataset_repo: str, split: str) -> SplitData:
         dataset=dataset,
         records=records,
         matching_indices_by_category=build_matching_index_map(records),
+        generator_options=generator_options(records),
+        index_by_generator_uid=build_generator_uid_index(records),
     )
 
 

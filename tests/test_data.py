@@ -9,7 +9,9 @@ from PIL import Image
 from viewer.constants import ALL_CATEGORIES_OPTION
 from viewer.data import (
     ImageLRUCache,
+    build_generator_uid_index,
     filter_labels,
+    generator_options,
     get_or_load_image,
     image_cache_key,
     load_image,
@@ -172,6 +174,44 @@ class FilterTests(unittest.TestCase):
         self.assertEqual(len(labels), 1)
         self.assertEqual(matches, [1])
 
+    def test_generator_uid_index_and_generator_options_are_ordered(self) -> None:
+        records = [
+            normalize_record(
+                {
+                    "image": Image.new("RGB", (16, 16), "white"),
+                    "generator": "g1",
+                    "uid": "u1",
+                    "labels": [],
+                }
+            ),
+            normalize_record(
+                {
+                    "image": Image.new("RGB", (16, 16), "white"),
+                    "generator": "g2",
+                    "uid": "u1",
+                    "labels": [],
+                }
+            ),
+            normalize_record(
+                {
+                    "image": Image.new("RGB", (16, 16), "white"),
+                    "generator": "g1",
+                    "uid": "u2",
+                    "labels": [],
+                }
+            ),
+        ]
+
+        self.assertEqual(generator_options(records), ("g1", "g2"))
+        self.assertEqual(
+            build_generator_uid_index(records),
+            {
+                ("g1", "u1"): 0,
+                ("g2", "u1"): 1,
+                ("g1", "u2"): 2,
+            },
+        )
+
 
 class SplitDataTests(unittest.TestCase):
     @mock.patch("datasets.load_dataset")
@@ -207,6 +247,8 @@ class SplitDataTests(unittest.TestCase):
         self.assertEqual(split_data.records[0].uid, "1")
         self.assertEqual(split_data.matching_indices_by_category[ALL_CATEGORIES_OPTION], (0, 1))
         self.assertEqual(split_data.matching_indices_by_category["high-level-semantics"], (1,))
+        self.assertEqual(split_data.generator_options, ("g1", "g2"))
+        self.assertEqual(split_data.index_by_generator_uid[("g2", "2")], 1)
 
     def test_load_image_decodes_single_image_from_bytes(self) -> None:
         split_data = SplitData(
@@ -217,6 +259,8 @@ class SplitDataTests(unittest.TestCase):
             ),
             records=(),
             matching_indices_by_category={},
+            generator_options=(),
+            index_by_generator_uid={},
         )
 
         image = load_image(split_data, 0)
@@ -265,7 +309,13 @@ class ImageCacheTests(unittest.TestCase):
         cache = ImageLRUCache(capacity=2)
         image = Image.new("RGB", (4, 4), "red")
         load_image_mock.return_value = image
-        split_data = SplitData(dataset=FakeDataset([]), records=(), matching_indices_by_category={})
+        split_data = SplitData(
+            dataset=FakeDataset([]),
+            records=(),
+            matching_indices_by_category={},
+            generator_options=(),
+            index_by_generator_uid={},
+        )
 
         loaded = get_or_load_image(cache, split_data, "repo", "labeled_test", 3)
         cached = get_or_load_image(cache, split_data, "repo", "labeled_test", 3)
@@ -285,6 +335,8 @@ class ImageCacheTests(unittest.TestCase):
             dataset=FakeDataset([]),
             records=(mock.sentinel.r0, mock.sentinel.r1, mock.sentinel.r2),
             matching_indices_by_category={},
+            generator_options=(),
+            index_by_generator_uid={},
         )
 
         prefetch_neighbor_images(cache, split_data, "repo", "labeled_test", 1)
@@ -300,6 +352,8 @@ class ImageCacheTests(unittest.TestCase):
             dataset=FakeDataset([]),
             records=(mock.sentinel.r0, mock.sentinel.r1),
             matching_indices_by_category={},
+            generator_options=(),
+            index_by_generator_uid={},
         )
 
         prefetch_neighbor_images(cache, split_data, "repo", "labeled_test", 0)

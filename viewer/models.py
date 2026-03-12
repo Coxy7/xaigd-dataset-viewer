@@ -26,3 +26,5 @@ class SplitData:
     dataset: Any
     records: Tuple[ImageRecord, ...]
     matching_indices_by_category: Dict[str, Tuple[int, ...]]
+    generator_options: Tuple[str, ...]
+    index_by_generator_uid: Dict[Tuple[str, str], int]

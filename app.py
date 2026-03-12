@@ -42,6 +42,9 @@ def init_state() -> None:
     state.setdefault("jump_input_scope", "")
     state.setdefault("jump_image_input", "1")
     state.setdefault("jump_match_input", "1")
+    state.setdefault("jump_record_scope", "")
+    state.setdefault("jump_record_generator", "")
+    state.setdefault("jump_record_uid", "")
     state.setdefault("total_records", 0)
     state.setdefault("image_cache", ImageLRUCache(capacity=IMAGE_CACHE_CAPACITY))
 
@@ -354,6 +357,30 @@ def jump_to_matching() -> None:
     st.session_state.jump_match_input = str(position)
 
 
+def sync_record_lookup_inputs(record: ImageRecord) -> None:
+    desired_scope = f"{st.session_state.source_key}:{st.session_state.current_index}"
+    if st.session_state.jump_record_scope != desired_scope:
+        st.session_state.jump_record_generator = record.generator
+        st.session_state.jump_record_uid = record.uid
+        st.session_state.jump_record_scope = desired_scope
+
+
+def jump_to_record(split_data: SplitData) -> str | None:
+    generator = st.session_state.jump_record_generator
+    uid = st.session_state.jump_record_uid.strip()
+
+    if not uid:
+        return "Enter a UID."
+
+    target_index = split_data.index_by_generator_uid.get((generator, uid))
+    if target_index is None:
+        return f"No image found for generator '{generator}' with UID '{uid}'."
+
+    st.session_state.current_index = target_index
+    st.session_state.jump_record_scope = f"{st.session_state.source_key}:{target_index}"
+    return None
+
+
 def sync_overlay_selection(base_labels: List) -> None:
     current_scope = (
         f"{st.session_state.source_key}:{st.session_state.current_index}:{st.session_state.selected_category}"
@@ -477,6 +504,29 @@ def render_info_panel(
             )
 
 
+def render_record_lookup_controls(split_data: SplitData) -> None:
+    record = split_data.records[st.session_state.current_index]
+    sync_record_lookup_inputs(record)
+
+    st.sidebar.markdown("### Jump to Generator + UID")
+    with st.sidebar.form("jump_record_form"):
+        st.selectbox(
+            "Generator",
+            options=list(split_data.generator_options),
+            key="jump_record_generator",
+        )
+        st.text_input(
+            "UID",
+            key="jump_record_uid",
+        )
+        submitted = st.form_submit_button("Go")
+
+    if submitted:
+        error_message = jump_to_record(split_data)
+        if error_message:
+            st.sidebar.warning(error_message)
+
+
 def apply_source_change(state: Dict[str, object], new_source_key: str) -> None:
     if new_source_key != state["source_key"]:
         state["source_key"] = new_source_key
@@ -581,6 +631,7 @@ def main() -> None:
     )
 
     category_shortcut_buttons()
+    render_record_lookup_controls(split_data)
     render_viewer(split_data)
 
 
