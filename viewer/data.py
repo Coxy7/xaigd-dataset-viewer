@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from PIL import Image
@@ -88,13 +89,27 @@ def generator_options(records: Iterable[ImageRecord]) -> Tuple[str, ...]:
 def load_split_data(dataset_repo: str, split: str) -> SplitData:
     from datasets import Image as HFImage
     from datasets import load_dataset
+    from huggingface_hub import snapshot_download
 
     if split not in {"labeled_train", "labeled_test"}:
         raise ValueError(f"Unsupported split: {split}")
 
+    snapshot_path = Path(
+        snapshot_download(
+            repo_id=dataset_repo,
+            repo_type="dataset",
+            allow_patterns=[f"data/{split}-*.parquet"],
+        )
+    )
+    parquet_files = sorted(snapshot_path.glob(f"data/{split}-*.parquet"))
+    if not parquet_files:
+        raise FileNotFoundError(
+            f"No parquet files found for split {split!r} in dataset repo {dataset_repo!r}"
+        )
+
     dataset = load_dataset(
         "parquet",
-        data_files={split: f"hf://datasets/{dataset_repo}/data/{split}-*.parquet"},
+        data_files={split: [str(path) for path in parquet_files]},
         split=split,
     )
     dataset = dataset.cast_column("image", HFImage(decode=False))

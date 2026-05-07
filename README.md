@@ -23,7 +23,7 @@ By default the app loads `Coxy7/X-AIGD-demo` and starts on the `labeled_train` s
 - Sidebar split switcher:
   - `labeled_train`
   - `labeled_test`
-- The app loads only the selected labeled parquet split. Unlabeled splits are not downloaded.
+- The app fetches only the selected labeled parquet split from the latest Hugging Face dataset snapshot. Unlabeled splits are not downloaded.
 
 ## Viewer Features
 

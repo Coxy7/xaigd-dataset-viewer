@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from io import BytesIO
+from pathlib import Path
+import tempfile
 import unittest
 from unittest import mock
 
@@ -214,8 +216,13 @@ class FilterTests(unittest.TestCase):
 
 
 class SplitDataTests(unittest.TestCase):
+    @mock.patch("huggingface_hub.snapshot_download")
     @mock.patch("datasets.load_dataset")
-    def test_load_split_data_builds_metadata_only_records(self, load_dataset_mock) -> None:
+    def test_load_split_data_builds_metadata_only_records(
+        self,
+        load_dataset_mock,
+        snapshot_download_mock,
+    ) -> None:
         fake_dataset = FakeDataset(
             [
                 {
@@ -237,18 +244,40 @@ class SplitDataTests(unittest.TestCase):
             ]
         )
         load_dataset_mock.return_value = fake_dataset
+        with tempfile.TemporaryDirectory() as tmpdir:
+            parquet_path = Path(tmpdir) / "data" / "labeled_test-00000-of-00001.parquet"
+            parquet_path.parent.mkdir(parents=True, exist_ok=True)
+            parquet_path.touch()
+            snapshot_download_mock.return_value = tmpdir
 
-        split_data = load_split_data("Coxy7/X-AIGD-demo", "labeled_test")
+            split_data = load_split_data("Coxy7/X-AIGD-demo", "labeled_test")
 
-        self.assertIsInstance(split_data, SplitData)
-        self.assertEqual(fake_dataset.cast_column_calls, [("image", False)])
-        self.assertEqual(fake_dataset.remove_columns_calls, [("image",)])
-        self.assertEqual(len(split_data.records), 2)
-        self.assertEqual(split_data.records[0].uid, "1")
-        self.assertEqual(split_data.matching_indices_by_category[ALL_CATEGORIES_OPTION], (0, 1))
-        self.assertEqual(split_data.matching_indices_by_category["high-level-semantics"], (1,))
-        self.assertEqual(split_data.generator_options, ("g1", "g2"))
-        self.assertEqual(split_data.index_by_generator_uid[("g2", "2")], 1)
+            self.assertIsInstance(split_data, SplitData)
+            snapshot_download_mock.assert_called_once_with(
+                repo_id="Coxy7/X-AIGD-demo",
+                repo_type="dataset",
+                allow_patterns=["data/labeled_test-*.parquet"],
+            )
+            load_dataset_mock.assert_called_once_with(
+                "parquet",
+                data_files={"labeled_test": [str(parquet_path)]},
+                split="labeled_test",
+            )
+            self.assertEqual(fake_dataset.cast_column_calls, [("image", False)])
+            self.assertEqual(fake_dataset.remove_columns_calls, [("image",)])
+            self.assertEqual(len(split_data.records), 2)
+            self.assertEqual(split_data.records[0].uid, "1")
+            self.assertEqual(split_data.matching_indices_by_category[ALL_CATEGORIES_OPTION], (0, 1))
+            self.assertEqual(split_data.matching_indices_by_category["high-level-semantics"], (1,))
+            self.assertEqual(split_data.generator_options, ("g1", "g2"))
+            self.assertEqual(split_data.index_by_generator_uid[("g2", "2")], 1)
+
+    @mock.patch("huggingface_hub.snapshot_download")
+    def test_load_split_data_raises_when_snapshot_has_no_matching_parquet(self, snapshot_download_mock) -> None:
+        snapshot_download_mock.return_value = "/tmp/hf-cache/snapshots/revision-1"
+
+        with self.assertRaisesRegex(FileNotFoundError, "labeled_test"):
+            load_split_data("Coxy7/X-AIGD-demo", "labeled_test")
 
     def test_load_image_decodes_single_image_from_bytes(self) -> None:
         split_data = SplitData(
