@@ -32,8 +32,8 @@ The sidebar lets you switch between:
 
 | Viewer option | Hugging Face dataset |
 | --- | --- |
-| `X-AIGD-demo` | `Coxy7/X-AIGD-demo` |
-| `X-AIGD` | `Coxy7/X-AIGD` |
+| `X-AIGD-demo` | [![X-AIGD-demo](https://img.shields.io/badge/Hugging%20Face-X--AIGD--demo-yellow?logo=huggingface)](https://huggingface.co/datasets/Coxy7/X-AIGD-demo) |
+| `X-AIGD` | [![X-AIGD](https://img.shields.io/badge/Hugging%20Face-X--AIGD-yellow?logo=huggingface)](https://huggingface.co/datasets/Coxy7/X-AIGD) |
 
 Available splits:
 
