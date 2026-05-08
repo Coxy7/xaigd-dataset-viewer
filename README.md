@@ -1,8 +1,6 @@
 # X-AIGD Dataset Viewer
 
-A lightweight Streamlit app for exploring X-AIGD images, artifact categories, polygon annotations, and sample metadata.
-
-The viewer is currently tailored for the X-AIGD datasets, while X-AIGD itself is a broader benchmark with defined tasks, metrics, and evaluation protocols.
+A lightweight Streamlit app for exploring [X-AIGD](https://github.com/Coxy7/X-AIGD) images, artifact categories, polygon annotations, and sample metadata.
 
 ## Setup
 
