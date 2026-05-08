@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "xaigd-label-viewer"
+name = "xaigd-dataset-viewer"
 version = "0.1.0"
-description = "Streamlit label visualization tool for the X-AIGD dataset."
+description = "Streamlit dataset exploration tool for X-AIGD images, labels, and metadata."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -21,4 +21,4 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["viewer*"]
+include = ["xaigd_viewer*"]

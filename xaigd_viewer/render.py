@@ -4,8 +4,8 @@ from typing import Iterable, Tuple
 
 from PIL import Image, ImageDraw
 
-from viewer.constants import CATEGORY_COLORS
-from viewer.models import ArtifactLabel
+from xaigd_viewer.constants import CATEGORY_COLORS
+from xaigd_viewer.models import ArtifactLabel
 
 
 def is_valid_polygon(label: ArtifactLabel) -> bool:

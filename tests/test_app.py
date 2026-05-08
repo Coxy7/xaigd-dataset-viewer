@@ -4,7 +4,7 @@ import importlib.util
 from pathlib import Path
 import unittest
 
-from viewer.data import ImageLRUCache
+from xaigd_viewer.data import ImageLRUCache
 
 
 APP_PATH = Path(__file__).resolve().parents[1] / "app.py"

@@ -5,15 +5,15 @@ from typing import Dict, List
 
 import streamlit as st
 
-from viewer.constants import ALL_CATEGORIES_OPTION, CATEGORY_COLORS, CATEGORY_LABELS, CATEGORY_ORDER
-from viewer.data import ImageLRUCache, filter_labels, get_or_load_image, load_split_data, prefetch_neighbor_images
-from viewer.keyboard import inject_keyboard_shortcuts
-from viewer.models import ImageRecord, SplitData
-from viewer.navigation import next_index
-from viewer.render import draw_overlays
+from xaigd_viewer.constants import ALL_CATEGORIES_OPTION, CATEGORY_COLORS, CATEGORY_LABELS, CATEGORY_ORDER
+from xaigd_viewer.data import ImageLRUCache, filter_labels, get_or_load_image, load_split_data, prefetch_neighbor_images
+from xaigd_viewer.keyboard import inject_keyboard_shortcuts
+from xaigd_viewer.models import ImageRecord, SplitData
+from xaigd_viewer.navigation import next_index
+from xaigd_viewer.render import draw_overlays
 
 
-st.set_page_config(page_title="X-AIGD Label Viewer", layout="centered")
+st.set_page_config(page_title="X-AIGD Dataset Viewer", layout="centered")
 
 DATASET_OPTIONS = {
     "X-AIGD-demo": "Coxy7/X-AIGD-demo",
@@ -586,7 +586,7 @@ def main() -> None:
     st.html(
         """
         <div class="viewer-header">
-          <h1>X-AIGD Label Viewer</h1>
+          <h1>X-AIGD Dataset Viewer</h1>
         </div>
         """,
         width="stretch",

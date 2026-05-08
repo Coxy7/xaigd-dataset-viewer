@@ -8,8 +8,8 @@ from unittest import mock
 
 from PIL import Image
 
-from viewer.constants import ALL_CATEGORIES_OPTION
-from viewer.data import (
+from xaigd_viewer.constants import ALL_CATEGORIES_OPTION
+from xaigd_viewer.data import (
     ImageLRUCache,
     build_generator_uid_index,
     filter_labels,
@@ -22,7 +22,7 @@ from viewer.data import (
     normalize_record,
     prefetch_neighbor_images,
 )
-from viewer.models import SplitData
+from xaigd_viewer.models import SplitData
 
 
 def png_bytes(color: str) -> bytes:
@@ -333,7 +333,7 @@ class ImageCacheTests(unittest.TestCase):
         self.assertIs(cache.get(train_key), train_image)
         self.assertIs(cache.get(test_key), test_image)
 
-    @mock.patch("viewer.data.load_image")
+    @mock.patch("xaigd_viewer.data.load_image")
     def test_get_or_load_image_uses_cache(self, load_image_mock) -> None:
         cache = ImageLRUCache(capacity=2)
         image = Image.new("RGB", (4, 4), "red")
@@ -353,7 +353,7 @@ class ImageCacheTests(unittest.TestCase):
         self.assertIs(cached, image)
         load_image_mock.assert_called_once_with(split_data, 3)
 
-    @mock.patch("viewer.data.load_image")
+    @mock.patch("xaigd_viewer.data.load_image")
     def test_prefetch_neighbor_images_warms_adjacent_indices(self, load_image_mock) -> None:
         load_image_mock.side_effect = [
             Image.new("RGB", (4, 4), "red"),
@@ -373,7 +373,7 @@ class ImageCacheTests(unittest.TestCase):
         self.assertEqual(load_image_mock.call_args_list, [mock.call(split_data, 0), mock.call(split_data, 2)])
         self.assertEqual(len(cache), 2)
 
-    @mock.patch("viewer.data.load_image")
+    @mock.patch("xaigd_viewer.data.load_image")
     def test_prefetch_neighbor_images_skips_out_of_bounds_indices(self, load_image_mock) -> None:
         load_image_mock.return_value = Image.new("RGB", (4, 4), "red")
         cache = ImageLRUCache(capacity=4)

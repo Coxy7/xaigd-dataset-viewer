@@ -7,8 +7,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from PIL import Image
 
-from viewer.constants import ALL_CATEGORIES_OPTION, CATEGORY_ORDER
-from viewer.models import ArtifactLabel, ImageRecord, SplitData
+from xaigd_viewer.constants import ALL_CATEGORIES_OPTION, CATEGORY_ORDER
+from xaigd_viewer.models import ArtifactLabel, ImageRecord, SplitData
 
 ImageCacheKey = Tuple[str, str, int]
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from viewer.constants import CATEGORY_LABELS, CATEGORY_ORDER
+from xaigd_viewer.constants import CATEGORY_LABELS, CATEGORY_ORDER
 
 
 def button_label_map() -> dict[str, str]:

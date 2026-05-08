@@ -1,52 +1,121 @@
-# X-AIGD Label Viewer
+# X-AIGD Dataset Viewer
 
-Local Streamlit app for browsing labeled X-AIGD images with artifact polygon overlays.
+A lightweight Streamlit app for exploring X-AIGD images, artifact categories, polygon annotations, and sample metadata.
 
-## Requirements
+The viewer is currently tailored for the X-AIGD datasets, while X-AIGD itself is a broader benchmark with defined tasks, metrics, and evaluation protocols.
 
+## Setup
+
+Requirements:
 - Python 3.10+
-- Access to a Python environment with `streamlit`, `datasets`, and `pillow`
+- A Python environment managed with your preferred tool, such as `venv` or `conda`
+- Internet access for loading dataset splits from Hugging Face
 
-## Run
+Install the viewer package in editable mode:
+```bash
+python -m pip install -e .
+```
+
+## Usage
+
+Start the app from the viewer directory:
 
 ```bash
 streamlit run app.py
 ```
 
-By default the app loads `Coxy7/X-AIGD-demo` and starts on the `labeled_train` split.
+By default, the viewer loads the development subset `Coxy7/X-AIGD-demo` and opens the `labeled_train` split.
 
-## Data Sources
+### Data Sources
 
-- Sidebar dataset switcher:
-  - `X-AIGD-demo` -> `Coxy7/X-AIGD-demo`
-  - `X-AIGD` -> `Coxy7/X-AIGD`
-- Sidebar split switcher:
-  - `labeled_train`
-  - `labeled_test`
-- The app fetches only the selected labeled parquet split from the latest Hugging Face dataset snapshot. Unlabeled splits are not downloaded.
+The sidebar lets you switch between:
 
-## Viewer Features
+| Viewer option | Hugging Face dataset |
+| --- | --- |
+| `X-AIGD-demo` | `Coxy7/X-AIGD-demo` |
+| `X-AIGD` | `Coxy7/X-AIGD` |
 
-- Single-image viewer with artifact polygon overlays.
-- Fullscreen toggle for the image viewer.
-- Polygons are rendered as colored outlines only.
-- Generator, UID, resolution, image index, filtered-match index, and visible-label count are shown in the info panel below the image.
-- Jump directly to an absolute image index or to a filtered matching-image index from the info panel.
-- Jump directly to a specific image from the sidebar by selecting a generator and entering a UID.
-- Category legend above the image:
-  - click a legend item to toggle that category on the current image only
-  - selected categories are highlighted
-  - unavailable categories are dimmed and disabled
-- Global dataset filtering from the sidebar:
-  - `All` or one of the seven artifact categories
-  - changing the sidebar filter does not force a jump away from the current image
+Available splits:
 
-## Controls
+| Split | Purpose |
+| --- | --- |
+| `labeled_train` | Labeled training split |
+| `labeled_test` | Labeled test split |
 
-- `Left` / `Right` or `A` / `D`: previous and next image
-- `F`: toggle the current image fullscreen view
-- `S`: show or hide all labels on the current image
-- `0`: clear category filter
-- `1`-`7`: select categories in spec order
-- Sidebar dataset selector, split selector, category selector, and quick filter buttons
-- Prev/Next buttons under the image
+The app fetches only the selected labeled parquet split from the latest Hugging Face dataset snapshot. Unlabeled splits are not downloaded.
+
+### Supported Interactions
+
+- Browse X-AIGD samples image by image.
+- Inspect artifact polygon overlays on top of each image.
+- Switch between the demo dataset and the full dataset.
+- Filter globally by artifact category.
+- Toggle visible categories on the current image.
+- Jump to an absolute image index or a filtered matching-image index.
+- Jump directly to a sample by generator and UID.
+- View generator, UID, resolution, image index, filtered-match index, and visible-label count.
+
+### Keyboard Shortcuts
+
+| Key | Action |
+| --- | --- |
+| `Left` / `A` | Previous image |
+| `Right` / `D` | Next image |
+| `F` | Toggle fullscreen image view |
+| `S` | Show or hide all labels on the current image |
+| `0` | Clear category filter |
+| `1`-`7` | Select artifact categories in spec order |
+
+These navigation and filtering controls are also available from the sidebar and buttons under the image.
+
+### Troubleshooting
+
+- If dataset loading fails, check your internet connection and confirm that `datasets` and `huggingface_hub` are installed in the active environment.
+- If Streamlit cannot start, confirm that `streamlit` is installed in the active environment.
+- For quick development and testing, use `Coxy7/X-AIGD-demo` before loading the full dataset.
+
+## Development
+
+<details>
+<summary>Show development notes</summary>
+
+### Specification
+
+See `doc/spec.md` for the current development reference, including supported data fields, viewer behavior, filtering semantics, navigation rules, and adaptation notes.
+
+### Unit Testing
+
+Install the optional test dependency:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Run tests with:
+
+```bash
+python -m pytest
+```
+
+### Adapting to Other Datasets
+
+This viewer supports X-AIGD and X-AIGD-demo out of the box. Similar datasets may be supported by adapting the dataset-loading layer to produce the same internal sample format used by the viewer.
+
+Potentially compatible annotation styles include:
+
+- polygon-style object annotations with category labels
+- image-level metadata used for filtering or navigation
+
+### Repository Layout
+
+When included in the X-AIGD repository, this viewer is intended to live under:
+
+```text
+tools/dataset_viewer/
+```
+
+Run commands from the viewer directory unless otherwise noted.
+
+The standalone development repository is [Coxy7/xaigd-dataset-viewer](https://github.com/Coxy7/xaigd-dataset-viewer).
+
+</details>

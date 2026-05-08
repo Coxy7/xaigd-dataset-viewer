@@ -4,8 +4,8 @@ import unittest
 
 from PIL import Image
 
-from viewer.models import ArtifactLabel
-from viewer.render import draw_overlays, polygon_color
+from xaigd_viewer.models import ArtifactLabel
+from xaigd_viewer.render import draw_overlays, polygon_color
 
 
 class RenderTests(unittest.TestCase):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from viewer.navigation import next_index
+from xaigd_viewer.navigation import next_index
 
 
 class NavigationTests(unittest.TestCase):
